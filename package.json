@@ -1,0 +1,23 @@
+{
+  "name": "cv-bot",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "pre-deploy": "wrangler login",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest run",
+    "cf-typegen": "wrangler types",
+    "update-context": "pnpm exec tsx ./scripts/update_context.ts res/inventory.json res/context.json"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.4.5",
+    "@cloudflare/workers-types": "^4.20240725.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.5.2",
+    "vitest": "1.5.0",
+    "wrangler": "^4.69.0"
+  },
+  "packageManager": "pnpm@8.15.4+sha512.0bd3a9be9eb0e9a692676deec00a303ba218ba279d99241475616b398dbaeedd11146f92c2843458f557b1d127e09d4c171e105bdcd6b61002b39685a8016b9e"
+}
