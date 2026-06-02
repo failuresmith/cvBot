@@ -1,15 +1,10 @@
 const encoder = new TextEncoder();
 
-type PublicAiStreamEvent = {
-  response?: string;
-  usage?: unknown;
-};
-
 function encodeSseData(data: string) {
   return encoder.encode(`data: ${data}\n\n`);
 }
 
-function parseJsonString(value: string): unknown {
+function parseJson(value: string): unknown {
   try {
     return JSON.parse(value);
   } catch {
@@ -17,61 +12,87 @@ function parseJsonString(value: string): unknown {
   }
 }
 
-function publicAiStreamEvent(raw: unknown): PublicAiStreamEvent | null {
-  if (!raw || typeof raw !== "object") return null;
-
-  const event = raw as Record<string, unknown>;
-  const out: PublicAiStreamEvent = {};
-  const hasUsage = "usage" in event;
-
-  if (typeof event.response === "string" && (event.response || hasUsage)) {
-    out.response = event.response;
-  }
-  if (hasUsage) {
-    out.usage = event.usage;
-  }
-
-  return "response" in out || "usage" in out ? out : null;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function parseSseData(record: string) {
   return record
-    .split("\n")
+    .split(/\r?\n/)
     .filter((line) => line.startsWith("data:"))
     .map((line) => line.slice(5).trimStart())
     .join("\n");
+}
+
+function buildPublicSseData(data: string) {
+  const parsed = parseJson(data);
+  if (!isRecord(parsed)) return data;
+
+  const publicData: Record<string, unknown> = {};
+
+  if (typeof parsed.response === "string") {
+    publicData.response = parsed.response;
+  }
+  if (parsed.usage !== undefined) {
+    publicData.usage = parsed.usage;
+  }
+
+  if (Object.keys(publicData).length === 0) return null;
+  if (publicData.response === "" && !("usage" in publicData)) return null;
+
+  return JSON.stringify(publicData);
+}
+
+function logSseData(data: string) {
+  const parsed = parseJson(data);
+  if (!isRecord(parsed)) return;
+
+  console.log(
+    "[ai-stream:sse-data]",
+    JSON.stringify({ keys: Object.keys(parsed) }),
+  );
 }
 
 export function createPublicAiStream(
   source: ReadableStream<Uint8Array>,
 ): ReadableStream<Uint8Array> {
   const decoder = new TextDecoder();
+
   let buffer = "";
+  let doneSent = false;
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
       const reader = source.getReader();
+
+      const emitDone = () => {
+        if (doneSent) return;
+
+        controller.enqueue(encodeSseData("[DONE]"));
+        doneSent = true;
+      };
 
       const emitRecord = (record: string) => {
         const data = parseSseData(record.trim());
         if (!data) return;
 
         if (data === "[DONE]") {
-          controller.enqueue(encodeSseData("[DONE]"));
+          emitDone();
           return;
         }
 
-        const parsed = parseJsonString(data);
-        const publicEvent = publicAiStreamEvent(parsed);
-        if (!publicEvent) return;
+        logSseData(data);
+        const publicData = buildPublicSseData(data);
+        if (!publicData) return;
 
-        controller.enqueue(encodeSseData(JSON.stringify(publicEvent)));
+        controller.enqueue(encodeSseData(publicData));
       };
 
       const emitCompleteRecords = () => {
         buffer = buffer.replace(/\r\n/g, "\n");
 
         let boundary = buffer.indexOf("\n\n");
+
         while (boundary !== -1) {
           emitRecord(buffer.slice(0, boundary));
           buffer = buffer.slice(boundary + 2);
@@ -89,7 +110,15 @@ export function createPublicAiStream(
         }
 
         buffer += decoder.decode();
-        if (buffer.trim()) emitRecord(buffer);
+
+        if (buffer.trim()) {
+          emitRecord(buffer);
+        }
+
+        // Guarantees a predictable public protocol even if the upstream
+        // provider closes the stream without sending [DONE].
+        emitDone();
+
         controller.close();
       } catch (error) {
         controller.error(error);

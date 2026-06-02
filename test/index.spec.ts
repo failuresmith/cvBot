@@ -243,7 +243,7 @@ describe("fetch()", () => {
 
     expect(response.status).toBe(200);
     expect(env.AI.run).toHaveBeenCalledWith(
-      "@cf/openai/gpt-oss-120b",
+      "@cf/google/gemma-4-26b-a4b-it",
       expect.objectContaining({ stream: true, temperature: 0 }),
     );
     expect(text).toContain('data: {"response":"What"}');

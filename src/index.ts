@@ -12,6 +12,25 @@ import {
   isContactDetailsRequest,
 } from "./contact";
 
+const AI_MODEL = "@cf/google/gemma-4-26b-a4b-it";
+
+type AiMessage = {
+  role: "system" | ClientMessage["role"];
+  content: string;
+};
+
+type CurrentAiModels = {
+  [AI_MODEL]: {
+    inputs: {
+      messages: AiMessage[];
+      stream: true;
+      reasoning: false;
+      temperature: number;
+    };
+    postProcessedOutputs: ReadableStream<Uint8Array>;
+  };
+};
+
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -99,21 +118,26 @@ export default {
     const dynamicContext = buildDynamicContext(relevant, tone);
 
     // Build final messages (no template tokens; Workers AI handles formatting)
-    const messages = [
+    const messages: AiMessage[] = [
       { role: "system", content: CORE_INSTRUCTION },
       { role: "system", content: toneSystem(tone) },
-      ...(dynamicContext ? [{ role: "system", content: dynamicContext }] : []),
-      ...history,
-      { role: "user", content: userMessage },
     ];
+    if (dynamicContext) {
+      messages.push({ role: "system", content: dynamicContext });
+    }
+    messages.push(...history, { role: "user", content: userMessage });
 
-    const stream = await env.AI.run("@cf/openai/gpt-oss-120b", {
-      stream: true,
-      messages,
-      // Optional knobs if you want:
-      // max_tokens: 500,
-      temperature: 0,
-    });
+    const stream = await (env.AI as unknown as Ai<CurrentAiModels>).run(
+      AI_MODEL,
+      {
+        messages,
+        stream: true,
+        reasoning: false,
+        // Optional knobs if you want:
+        // max_tokens: 500,
+        temperature: 0,
+      },
+    );
 
     return new Response(
       createPublicAiStream(stream as ReadableStream<Uint8Array>),
