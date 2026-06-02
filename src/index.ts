@@ -107,7 +107,7 @@ export default {
       { role: "user", content: userMessage },
     ];
 
-    const stream = await env.AI.run("@cf/meta/llama-3-8b-instruct", {
+    const stream = await env.AI.run("@cf/openai/gpt-oss-120b", {
       stream: true,
       messages,
       // Optional knobs if you want:

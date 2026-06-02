@@ -243,7 +243,7 @@ describe("fetch()", () => {
 
     expect(response.status).toBe(200);
     expect(env.AI.run).toHaveBeenCalledWith(
-      "@cf/meta/llama-3-8b-instruct",
+      "@cf/openai/gpt-oss-120b",
       expect.objectContaining({ stream: true, temperature: 0 }),
     );
     expect(text).toContain('data: {"response":"What"}');
