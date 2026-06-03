@@ -211,11 +211,11 @@ describe("fetch()", () => {
 
   it("filters provider-only fields from streamed AI responses", async () => {
     const rawStream = streamFrom([
-      'data: {"response":"What","p":"abc"}\n\n',
-      'data: {"response":"","p":"heartbeat"}\n',
+      'data: {"choices":[{"delta":{"content":"What","reasoning":"private"}}],"p":"abc"}\n\n',
+      'data: {"choices":[{"delta":{"content":""}}],"p":"heartbeat"}\n',
       "\n",
-      'data: {"response":" next","p":"def"}\n\n',
-      'data: {"response":"","usage":{"prompt_tokens":10,"completion_tokens":2,"total_tokens":12}}\n\n',
+      'data: {"choices":[{"delta":{"content":" next"}}],"p":"def"}\n\n',
+      'data: {"choices":[{"delta":{}}],"usage":{"prompt_tokens":10,"completion_tokens":2,"total_tokens":12}}\n\n',
       "data: [DONE]\n\n",
     ]);
     const env = {
@@ -248,11 +248,11 @@ describe("fetch()", () => {
     );
     expect(text).toContain('data: {"response":"What"}');
     expect(text).toContain('data: {"response":" next"}');
-    expect(text).toContain(
-      'data: {"response":"","usage":{"prompt_tokens":10,"completion_tokens":2,"total_tokens":12}}',
-    );
     expect(text).toContain("data: [DONE]");
     expect(text).not.toContain('"p"');
     expect(text).not.toContain("heartbeat");
+    expect(text).not.toContain("private");
+    expect(text).not.toContain("reasoning");
+    expect(text).not.toContain("usage");
   });
 });

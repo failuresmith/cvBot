@@ -1,5 +1,14 @@
 const encoder = new TextEncoder();
 
+type UpstreamAiStreamEvent = {
+  choices?: Array<{
+    delta?: {
+      content?: unknown;
+      reasoning?: unknown;
+    };
+  }>;
+};
+
 function encodeSseData(data: string) {
   return encoder.encode(`data: ${data}\n\n`);
 }
@@ -12,45 +21,12 @@ function parseJson(value: string): unknown {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function parseSseData(record: string) {
   return record
     .split(/\r?\n/)
     .filter((line) => line.startsWith("data:"))
     .map((line) => line.slice(5).trimStart())
     .join("\n");
-}
-
-function buildPublicSseData(data: string) {
-  const parsed = parseJson(data);
-  if (!isRecord(parsed)) return data;
-
-  const publicData: Record<string, unknown> = {};
-
-  if (typeof parsed.response === "string") {
-    publicData.response = parsed.response;
-  }
-  if (parsed.usage !== undefined) {
-    publicData.usage = parsed.usage;
-  }
-
-  if (Object.keys(publicData).length === 0) return null;
-  if (publicData.response === "" && !("usage" in publicData)) return null;
-
-  return JSON.stringify(publicData);
-}
-
-function logSseData(data: string) {
-  const parsed = parseJson(data);
-  if (!isRecord(parsed)) return;
-
-  console.log(
-    "[ai-stream:sse-data]",
-    JSON.stringify({ keys: Object.keys(parsed) }),
-  );
 }
 
 export function createPublicAiStream(
@@ -81,11 +57,23 @@ export function createPublicAiStream(
           return;
         }
 
-        logSseData(data);
-        const publicData = buildPublicSseData(data);
-        if (!publicData) return;
+        const parsed = parseJson(data);
+        if (!parsed || typeof parsed !== "object") return;
 
-        controller.enqueue(encodeSseData(publicData));
+        const event = parsed as UpstreamAiStreamEvent;
+        const content = event.choices?.[0]?.delta?.content;
+
+        // Publish visible answer tokens only.
+        // Drop reasoning, usage, provider metadata, and unknown fields.
+        if (typeof content !== "string" || content.length === 0) return;
+
+        controller.enqueue(
+          encodeSseData(
+            JSON.stringify({
+              response: content,
+            }),
+          ),
+        );
       };
 
       const emitCompleteRecords = () => {
