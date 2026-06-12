@@ -2,8 +2,8 @@ const encoder = new TextEncoder();
 
 export const CONTACT_DETAILS = {
   email: "miladtsx@gmail.com",
-  telegram: "https://t.me/miladtsx",
-  booking: "https://cal.com/miladtsx/intro",
+  telegram: "https://t.me/sebaesar",
+  booking: "https://cal.com/sebaesar/intro",
 } as const;
 
 export const CONTACT_DETAILS_RESPONSE = [
