@@ -203,8 +203,8 @@ describe("fetch()", () => {
     expect(response.status).toBe(200);
     expect(env.AI.run).not.toHaveBeenCalled();
     expect(text).toContain("Email: miladtsx@gmail.com");
-    expect(text).toContain("Telegram: https://t.me/sebaesar");
-    expect(text).toContain("Booking: https://cal.com/sebaesar/intro");
+    expect(text).toContain("Telegram: https://t.me/miloforge");
+    expect(text).toContain("Booking: https://cal.com/miloforge/intro");
     expect(text).not.toMatch(/\?/);
     expect(text).toContain("data: [DONE]");
   });
