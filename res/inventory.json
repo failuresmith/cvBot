@@ -5,8 +5,8 @@
     "name": "MILAD TSX",
     "contact": {
       "email": "miladtsx@gmail.com",
-      "github": "https://github.com/miloforge",
-      "website": "https://miloforge.github.io/terminal/"
+      "github": "https://github.com/milaforge",
+      "website": "https://milaforge.github.io/terminal/"
     },
     "location": {
       "timezone": "UTC+3",
@@ -1891,8 +1891,8 @@
           },
           {
             "id": "learn_olas_02",
-            "text_long": "Built hands-on agent workflows as part of the program: https://github.com/miloforge/dcpay.",
-            "text_short": "Built agent workflows; repo: miloforge/dcpay.",
+            "text_long": "Built hands-on agent workflows as part of the program: https://github.com/milaforge/dcpay.",
+            "text_short": "Built agent workflows; repo: milaforge/dcpay.",
             "tags": [
               "ai_agents",
               "documentation"
@@ -1901,7 +1901,7 @@
             "confidence": "high",
             "evidence": {
               "type": "repo",
-              "ref": "https://github.com/miloforge/dcpay"
+              "ref": "https://github.com/milaforge/dcpay"
             }
           }
         ],
